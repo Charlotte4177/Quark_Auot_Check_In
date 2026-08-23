@@ -28,13 +28,12 @@ jobs:
           path: .signed_flag
           key: quark-signed-${{ steps.get-date.outputs.today }}
 
-      - name: 已签到则直接结束
+      - name: 已签到则跳过后续步骤
         if: steps.cache-check.outputs.cache-hit == 'true'
-        run: |
-          echo "今日（${{ steps.get-date.outputs.today }}）已完成签到，跳过本次执行。"
-          exit 0
+        run: echo "今日（${{ steps.get-date.outputs.today }}）已完成签到，跳过本次执行。"
 
       - name: 随机延迟（防风控）
+        if: steps.cache-check.outputs.cache-hit != 'true'
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ github.event.schedule }}" = "31 12 * * *" ]; then
             delay=$((RANDOM % 30 + 1))
@@ -45,19 +44,23 @@ jobs:
           sleep $delay
 
       - name: 设置 Python 环境
+        if: steps.cache-check.outputs.cache-hit != 'true'
         uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
       - name: 安装依赖
+        if: steps.cache-check.outputs.cache-hit != 'true'
         run: pip install --no-cache-dir requests
 
       - name: 执行签到脚本
+        if: steps.cache-check.outputs.cache-hit != 'true'
         env:
           COOKIE_QUARK: ${{ secrets.COOKIE_QUARK }}
         run: python checkIn_Quark.py
 
       - name: 生成签到标记
+        if: steps.cache-check.outputs.cache-hit != 'true'
         run: date > .signed_flag
 
       - name: 清理旧的工作流记录
